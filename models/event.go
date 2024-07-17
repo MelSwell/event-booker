@@ -7,41 +7,23 @@ import (
 )
 
 type Event struct {
-	ID          int64
-	Name        string    `binding:"required"`
-	Description string    `binding:"required"`
-	Location    string    `binding:"required"`
-	DateTime    time.Time `binding:"required"`
-	UserID      int64
+	ID          int64     `json:"id"`
+	Name        string    `binding:"required" json:"name"`
+	Description string    `binding:"required" json:"description"`
+	Location    string    `binding:"required" json:"location"`
+	DateTime    time.Time `binding:"required" json:"dateTime"`
+	UserID      int64     `json:"userID"`
 }
 
-func (e Event) Save() error {
-	query := `
-	INSERT INTO events (name, description, location, dateTime, user_id)
-	VALUES (?, ?, ?, ?, ?)`
-
-	stmt, err := db.DB.Prepare(query)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(
-		e.Name,
-		e.Description,
-		e.Location,
-		e.DateTime,
-		e.UserID,
-	)
-
-	if err != nil {
-		return err
-	}
-
-	return err
+func (e Event) tableName() string {
+	return "events"
 }
 
-func GetAllEvents() ([]Event, error) {
+func (e Event) columnNames() []string {
+	return []string{"name", "description", "location", "dateTime", "userID"}
+}
+
+func GetEvents() ([]Event, error) {
 	query := "SELECT * FROM events"
 	r, err := db.DB.Query(query)
 	if err != nil {
