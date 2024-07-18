@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql"
 	"fmt"
 	"reflect"
 	"strings"
@@ -35,6 +36,46 @@ func Create(m Model) (int64, error) {
 	}
 
 	return res.LastInsertId()
+}
+
+func Update(m Model, id int64) (sql.Result, error) {
+	tableName := m.tableName()
+	columns := m.columnNames()
+	vals := fieldVals(m)
+	vals = append(vals, id)
+
+	setClause := make([]string, (len(columns)))
+	for i, c := range columns {
+		setClause[i] = fmt.Sprintf("%s = ?", c)
+	}
+
+	query := fmt.Sprintf("UPDATE %s SET %s WHERE id = ?",
+		tableName,
+		strings.Join(setClause, ", "))
+
+	stmt, err := db.DB.Prepare(query)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	res, err := stmt.Exec(vals...)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func Delete(m Model, id int64) error {
+	query := fmt.Sprintf("DELETE FROM %s WHERE id = ?", m.tableName())
+	stmt, err := db.DB.Prepare(query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(id)
+	return err
 }
 
 /////////////////// HELPERS /////////////////////////

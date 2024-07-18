@@ -71,7 +71,7 @@ func updateEvent(c *gin.Context) {
 		return
 	}
 
-	err = c.ShouldBindJSON(&e)
+	err = c.ShouldBindJSON(e)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"status":  "fail",
@@ -80,11 +80,11 @@ func updateEvent(c *gin.Context) {
 		return
 	}
 
-	err = e.Update()
+	_, err = models.Update(*e, e.ID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"status":  "fail",
-			"message": err.Error(),
+			"message": err,
 		})
 		return
 	}
@@ -100,7 +100,7 @@ func deleteEvent(c *gin.Context) {
 		return
 	}
 
-	err = e.Delete()
+	err = models.Delete(e, e.ID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"status":  "fail",
