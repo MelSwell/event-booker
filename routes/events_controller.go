@@ -54,7 +54,7 @@ func createEvent(c *gin.Context) {
 }
 
 func getEvent(c *gin.Context) {
-	e, err := getByParam(c)
+	e, err := getByID(c)
 	if err != nil {
 		return
 	}
@@ -66,12 +66,12 @@ func getEvent(c *gin.Context) {
 }
 
 func updateEvent(c *gin.Context) {
-	e, err := getByParam(c)
+	e, err := getByID(c)
 	if err != nil {
 		return
 	}
 
-	err = c.ShouldBindJSON(e)
+	err = c.ShouldBindJSON(&e)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"status":  "fail",
@@ -88,6 +88,7 @@ func updateEvent(c *gin.Context) {
 		})
 		return
 	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"status": "success",
 		"data":   e,
@@ -95,7 +96,7 @@ func updateEvent(c *gin.Context) {
 }
 
 func deleteEvent(c *gin.Context) {
-	e, err := getByParam(c)
+	e, err := getByID(c)
 	if err != nil {
 		return
 	}
@@ -115,7 +116,7 @@ func deleteEvent(c *gin.Context) {
 	})
 }
 
-func getByParam(c *gin.Context) (*models.Event, error) {
+func getByID(c *gin.Context) (*models.Event, error) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -125,7 +126,8 @@ func getByParam(c *gin.Context) (*models.Event, error) {
 		return nil, err
 	}
 
-	e, err := models.GetEventByID(id)
+	var e models.Event
+	err = models.GetByID(&e, id)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 			"status":  "fail",
@@ -133,6 +135,5 @@ func getByParam(c *gin.Context) (*models.Event, error) {
 		})
 		return nil, err
 	}
-
-	return e, nil
+	return &e, nil
 }

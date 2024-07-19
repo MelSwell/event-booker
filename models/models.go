@@ -78,6 +78,16 @@ func Delete(m Model, id int64) error {
 	return err
 }
 
+func GetByID(m Model, id int64) error {
+	query := fmt.Sprintf("SELECT * FROM %s WHERE id = ?", m.tableName())
+	r := db.DB.QueryRow(query, id)
+	err := scanRowToModel(m, r)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 /////////////////// HELPERS /////////////////////////
 
 func fieldVals(m Model) []interface{} {
@@ -102,6 +112,21 @@ func fieldVals(m Model) []interface{} {
 	}
 
 	return values
+}
+
+func scanRowToModel(m Model, r *sql.Row) error {
+	val := reflect.ValueOf(m).Elem()
+	typ := val.Type()
+
+	vals := make([]interface{}, typ.NumField())
+	for i := 0; i < typ.NumField(); i++ {
+		vals[i] = val.Field(i).Addr().Interface()
+	}
+	err := r.Scan(vals...)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func placeholders(n int) string {
