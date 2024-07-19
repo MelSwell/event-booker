@@ -1,24 +1,26 @@
 package models
 
-import "example.com/event-booker/db"
+import "golang.org/x/crypto/bcrypt"
 
 type User struct {
-	ID       int64
-	Email    string `binding:"required"`
-	Password string `binding:"required"`
+	ID       int64  `json:"id"`
+	Email    string `binding:"required,email" json:"email"`
+	Password string `binding:"required,min=6,max=120" json:"password"`
 }
 
-func (u User) Create() error {
-	query := "INSERT INTO users(email, password) VALUES(?, ?)"
-	stmt, err := db.DB.Prepare(query)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
+func (User) tableName() string {
+	return "users"
+}
 
-	_, err = stmt.Exec(u.Email, u.Password)
+func (User) columnNames() []string {
+	return []string{"email", "password"}
+}
+
+func (u *User) HashPassword() error {
+	b, err := bcrypt.GenerateFromPassword([]byte(u.Password), 12)
 	if err != nil {
 		return err
 	}
-	return err
+	u.Password = string(b)
+	return nil
 }

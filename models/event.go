@@ -15,11 +15,11 @@ type Event struct {
 	UserID      int64     `json:"userID"`
 }
 
-func (e Event) tableName() string {
+func (Event) tableName() string {
 	return "events"
 }
 
-func (e Event) columnNames() []string {
+func (Event) columnNames() []string {
 	return []string{"name", "description", "location", "dateTime", "userID"}
 }
 
