@@ -38,7 +38,7 @@ func Create(m Model) (int64, error) {
 	return res.LastInsertId()
 }
 
-func Update(m Model, id int64) (sql.Result, error) {
+func Update(m Model, id int64) error {
 	tableName := m.tableName()
 	columns := m.columnNames()
 	vals := fieldVals(m)
@@ -55,15 +55,14 @@ func Update(m Model, id int64) (sql.Result, error) {
 
 	stmt, err := db.DB.Prepare(query)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Exec(vals...)
-	if err != nil {
-		return nil, err
+	if _, err := stmt.Exec(vals...); err != nil {
+		return err
 	}
-	return res, nil
+	return nil
 }
 
 func Delete(m Model, id int64) error {
@@ -81,8 +80,8 @@ func Delete(m Model, id int64) error {
 func GetByID(m Model, id int64) error {
 	query := fmt.Sprintf("SELECT * FROM %s WHERE id = ?", m.tableName())
 	r := db.DB.QueryRow(query, id)
-	err := scanRowToModel(m, r)
-	if err != nil {
+
+	if err := scanRowToModel(m, r); err != nil {
 		return err
 	}
 	return nil
@@ -122,8 +121,8 @@ func scanRowToModel(m Model, r *sql.Row) error {
 	for i := 0; i < typ.NumField(); i++ {
 		vals[i] = val.Field(i).Addr().Interface()
 	}
-	err := r.Scan(vals...)
-	if err != nil {
+
+	if err := r.Scan(vals...); err != nil {
 		return err
 	}
 	return nil

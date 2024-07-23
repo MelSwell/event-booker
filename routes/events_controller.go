@@ -27,9 +27,8 @@ func getEvents(c *gin.Context) {
 
 func createEvent(c *gin.Context) {
 	var e models.Event
-	err := c.ShouldBindJSON(&e)
 
-	if err != nil {
+	if err := c.ShouldBindJSON(&e); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"status":  "fail",
 			"message": err.Error(),
@@ -54,7 +53,7 @@ func createEvent(c *gin.Context) {
 }
 
 func getEvent(c *gin.Context) {
-	e, err := getByID(c)
+	e, err := getEventByID(c)
 	if err != nil {
 		return
 	}
@@ -66,13 +65,12 @@ func getEvent(c *gin.Context) {
 }
 
 func updateEvent(c *gin.Context) {
-	e, err := getByID(c)
+	e, err := getEventByID(c)
 	if err != nil {
 		return
 	}
 
-	err = c.ShouldBindJSON(&e)
-	if err != nil {
+	if err = c.ShouldBindJSON(&e); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"status":  "fail",
 			"message": err.Error(),
@@ -80,8 +78,7 @@ func updateEvent(c *gin.Context) {
 		return
 	}
 
-	_, err = models.Update(*e, e.ID)
-	if err != nil {
+	if err = models.Update(*e, e.ID); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"status":  "fail",
 			"message": err,
@@ -96,13 +93,12 @@ func updateEvent(c *gin.Context) {
 }
 
 func deleteEvent(c *gin.Context) {
-	e, err := getByID(c)
+	e, err := getEventByID(c)
 	if err != nil {
 		return
 	}
 
-	err = models.Delete(e, e.ID)
-	if err != nil {
+	if err = models.Delete(e, e.ID); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"status":  "fail",
 			"message": err.Error(),
@@ -116,7 +112,7 @@ func deleteEvent(c *gin.Context) {
 	})
 }
 
-func getByID(c *gin.Context) (*models.Event, error) {
+func getEventByID(c *gin.Context) (*models.Event, error) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -127,8 +123,7 @@ func getByID(c *gin.Context) (*models.Event, error) {
 	}
 
 	var e models.Event
-	err = models.GetByID(&e, id)
-	if err != nil {
+	if err = models.GetByID(&e, id); err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 			"status":  "fail",
 			"message": "Could not find an event with that ID",
