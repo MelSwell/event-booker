@@ -36,6 +36,7 @@ func createEvent(c *gin.Context) {
 		return
 	}
 
+	e.UserID = c.GetInt64("userId")
 	id, err := models.Create(e)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -78,6 +79,14 @@ func updateEvent(c *gin.Context) {
 		return
 	}
 
+	if e.UserID != c.GetInt64("userId") {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"status":  "fail",
+			"message": "not authorized to update this event",
+		})
+		return
+	}
+
 	if err = models.Update(*e, e.ID); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"status":  "fail",
@@ -95,6 +104,14 @@ func updateEvent(c *gin.Context) {
 func deleteEvent(c *gin.Context) {
 	e, err := getEventByID(c)
 	if err != nil {
+		return
+	}
+
+	if e.UserID != c.GetInt64("userId") {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"status":  "fail",
+			"message": "not authorized to delete this event",
+		})
 		return
 	}
 

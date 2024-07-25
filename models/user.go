@@ -2,7 +2,6 @@ package models
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"time"
 
@@ -53,7 +52,6 @@ func (u *User) ValidateLogin() error {
 }
 
 func (u User) GenerateJWT() (string, error) {
-	fmt.Println(u)
 	tok := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"email": u.Email,
 		"id":    u.ID,
@@ -68,3 +66,29 @@ func isValidPW(hash string, plaintext string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(plaintext))
 	return err == nil
 }
+
+// func VerifyToken(tokStr string) (int64, error) {
+// 	tok, err := jwt.Parse(tokStr, func(t *jwt.Token) (interface{}, error) {
+// 		godotenv.Load("env")
+// 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+// 			return nil, errors.New("invalid token signing method")
+// 		}
+// 		return os.Getenv("JWT_SECRET"), nil
+// 	})
+
+// 	if err != nil {
+// 		return 0, errors.New("could not parse token")
+// 	}
+
+// 	if !tok.Valid {
+// 		return 0, errors.New("invalid token")
+// 	}
+
+// 	claims, ok := tok.Claims.(jwt.MapClaims)
+// 	if !ok {
+// 		return 0, errors.New("invalid token. Please try logging in again")
+// 	}
+// 	userId := claims["id"].(int64)
+
+// 	return userId, nil
+// }

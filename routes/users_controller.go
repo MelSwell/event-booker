@@ -12,6 +12,8 @@ func signup(c *gin.Context) {
 	var u models.User
 	err := c.ShouldBindJSON(&u)
 
+	// Is this too cute? Will HashPassword() truly only ever
+	// result in err as a result of user err?
 	if err == nil {
 		err = u.HashPassword()
 	}
@@ -34,9 +36,18 @@ func signup(c *gin.Context) {
 	}
 	u.ID = id
 
+	jwt, err := u.GenerateJWT()
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"status":  "fail",
+			"message": err.Error(),
+		})
+		return
+	}
+
 	c.JSON(http.StatusCreated, gin.H{
 		"status": "success",
-		"data":   u,
+		"data":   gin.H{"user": u, "token": jwt},
 	})
 }
 
@@ -70,7 +81,7 @@ func login(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"status": "success",
-		"data":   jwt,
+		"data":   gin.H{"token": jwt, "user": u},
 	})
 }
 
