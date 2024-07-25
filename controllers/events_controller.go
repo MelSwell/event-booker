@@ -1,4 +1,4 @@
-package routes
+package controllers
 
 import (
 	"net/http"
@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func getEvents(c *gin.Context) {
+func GetEvents(c *gin.Context) {
 	e, err := models.GetEvents()
 
 	if err != nil {
@@ -25,7 +25,7 @@ func getEvents(c *gin.Context) {
 	})
 }
 
-func createEvent(c *gin.Context) {
+func CreateEvent(c *gin.Context) {
 	var e models.Event
 
 	if err := c.ShouldBindJSON(&e); err != nil {
@@ -53,7 +53,7 @@ func createEvent(c *gin.Context) {
 	})
 }
 
-func getEvent(c *gin.Context) {
+func GetEvent(c *gin.Context) {
 	e, err := getEventByID(c)
 	if err != nil {
 		return
@@ -65,7 +65,7 @@ func getEvent(c *gin.Context) {
 	})
 }
 
-func updateEvent(c *gin.Context) {
+func UpdateEvent(c *gin.Context) {
 	e, err := getEventByID(c)
 	if err != nil {
 		return
@@ -101,7 +101,7 @@ func updateEvent(c *gin.Context) {
 	})
 }
 
-func deleteEvent(c *gin.Context) {
+func DeleteEvent(c *gin.Context) {
 	e, err := getEventByID(c)
 	if err != nil {
 		return
