@@ -15,5 +15,6 @@ func main() {
 	r.Use(middlewares.ErrorHandler())
 
 	routes.RegisterRoutes(r)
+	r.Use(middlewares.NotFoundHandler())
 	r.Run(":8080")
 }

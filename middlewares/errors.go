@@ -3,6 +3,7 @@ package middlewares
 import (
 	"errors"
 	"fmt"
+	"net/http"
 
 	"example.com/event-booker/apperrors"
 	"github.com/gin-gonic/gin"
@@ -23,6 +24,16 @@ func ErrorHandler() gin.HandlerFunc {
 				appErr = apperrors.Internal{Message: "Unexpected error occurred"}
 			}
 			sendError(c, appErr)
+		}
+	}
+}
+
+func NotFoundHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Next()
+
+		if c.Writer.Status() == http.StatusNotFound {
+			sendError(c, apperrors.NotFound{Message: "Resource not found"})
 		}
 	}
 }

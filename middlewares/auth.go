@@ -36,11 +36,11 @@ func Authenticate() gin.HandlerFunc {
 
 func verifyToken(tokStr string) (id int64, err error) {
 	tok, err := jwt.Parse(tokStr, func(t *jwt.Token) (interface{}, error) {
-		godotenv.Load(".env")
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("invalid token signing method")
 		}
 
+		godotenv.Load(".env")
 		return []byte(os.Getenv("JWT_SECRET")), nil
 	})
 
