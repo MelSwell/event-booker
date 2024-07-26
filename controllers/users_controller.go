@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"example.com/event-booker/apperrors"
 	"example.com/event-booker/middlewares"
 	"example.com/event-booker/models"
 	"github.com/gin-gonic/gin"
@@ -24,13 +25,13 @@ func GetUser(c *gin.Context) {
 func getUserByID(c *gin.Context) (*models.User, error) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		middlewares.SetError(c, http.StatusBadRequest, "Invalid ID")
+		middlewares.SetError(c, apperrors.Validation{Message: "Invalid ID"})
 		return nil, err
 	}
 
 	var u models.User
 	if err = models.GetByID(&u, id); err != nil {
-		middlewares.SetError(c, http.StatusNotFound, "Could not find user with that ID")
+		middlewares.SetError(c, apperrors.NotFound{Message: "Could not find user with that ID"})
 		return nil, err
 	}
 	return &u, nil

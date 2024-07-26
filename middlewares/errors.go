@@ -1,13 +1,12 @@
 package middlewares
 
 import (
+	"errors"
+	"fmt"
+
+	"example.com/event-booker/apperrors"
 	"github.com/gin-gonic/gin"
 )
-
-type AppErr struct {
-	Code    int
-	Message string
-}
 
 func ErrorHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -19,24 +18,44 @@ func ErrorHandler() gin.HandlerFunc {
 		}
 
 		if err, exists := c.Get("error"); exists && err != nil {
-			sendError(c, err.(AppErr))
+			appErr, ok := err.(apperrors.AppError)
+			if !ok {
+				appErr = apperrors.Internal{Message: "Unexpected error occurred"}
+			}
+			sendError(c, appErr)
 		}
 	}
 }
 
-func SetError(c *gin.Context, code int, msg string) {
-	appErr := AppErr{
-		Code:    code,
-		Message: msg,
+func Recovery() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Printf("Panic recovered: %v", r)
+				sendError(c, apperrors.Internal{Message: "Internal server error"})
+			}
+		}()
+		c.Next()
 	}
+}
 
-	c.Set("error", appErr)
+func SetError(c *gin.Context, err error) {
+	var appErr apperrors.AppError
+	if errors.As(err, &appErr) {
+		c.Set("error", appErr)
+	} else {
+		c.Set("error", apperrors.Internal{Message: err.Error()})
+	}
 	c.Abort()
 }
 
-func sendError(c *gin.Context, err AppErr) {
-	c.AbortWithStatusJSON(err.Code, gin.H{
+func sendError(c *gin.Context, err apperrors.AppError) {
+	if _, ok := err.(apperrors.Internal); ok {
+		fmt.Printf("Error: %v", err)
+	}
+
+	c.AbortWithStatusJSON(err.Code(), gin.H{
 		"status":  "fail",
-		"message": err.Message,
+		"message": err.Error(),
 	})
 }

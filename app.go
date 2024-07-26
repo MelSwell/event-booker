@@ -10,7 +10,10 @@ import (
 func main() {
 	db.InitDB()
 	r := gin.Default()
+
+	r.Use(middlewares.Recovery())
 	r.Use(middlewares.ErrorHandler())
+
 	routes.RegisterRoutes(r)
 	r.Run(":8080")
 }

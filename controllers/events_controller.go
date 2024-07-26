@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"example.com/event-booker/apperrors"
 	"example.com/event-booker/middlewares"
 	"example.com/event-booker/models"
 	"github.com/gin-gonic/gin"
@@ -13,7 +14,7 @@ func GetEvents(c *gin.Context) {
 	e, err := models.GetEvents()
 
 	if err != nil {
-		middlewares.SetError(c, http.StatusBadRequest, err.Error())
+		middlewares.SetError(c, apperrors.Validation{Message: err.Error()})
 		return
 	}
 
@@ -27,14 +28,14 @@ func CreateEvent(c *gin.Context) {
 	var e models.Event
 
 	if err := c.ShouldBindJSON(&e); err != nil {
-		middlewares.SetError(c, http.StatusBadRequest, err.Error())
+		middlewares.SetError(c, apperrors.Validation{Message: err.Error()})
 		return
 	}
 
 	e.UserID = c.GetInt64("userId")
 	id, err := models.Create(e)
 	if err != nil {
-		middlewares.SetError(c, http.StatusBadRequest, err.Error())
+		middlewares.SetError(c, apperrors.Validation{Message: err.Error()})
 		return
 	}
 	e.ID = id
@@ -64,17 +65,17 @@ func UpdateEvent(c *gin.Context) {
 	}
 
 	if err = c.ShouldBindJSON(&e); err != nil {
-		middlewares.SetError(c, http.StatusBadRequest, err.Error())
+		middlewares.SetError(c, apperrors.Validation{Message: err.Error()})
 		return
 	}
 
 	if e.UserID != c.GetInt64("userId") {
-		middlewares.SetError(c, http.StatusUnauthorized, "not authorized to update this event")
+		middlewares.SetError(c, apperrors.Unauthorized{Message: "not authorized to update this event"})
 		return
 	}
 
 	if err = models.Update(*e, e.ID); err != nil {
-		middlewares.SetError(c, http.StatusInternalServerError, err.Error())
+		middlewares.SetError(c, apperrors.Internal{Message: err.Error()})
 		return
 	}
 
@@ -91,12 +92,12 @@ func DeleteEvent(c *gin.Context) {
 	}
 
 	if e.UserID != c.GetInt64("userId") {
-		middlewares.SetError(c, http.StatusUnauthorized, "not authorized to delete this event")
+		middlewares.SetError(c, apperrors.Unauthorized{Message: "not authorized to delete this event"})
 		return
 	}
 
 	if err = models.Delete(e, e.ID); err != nil {
-		middlewares.SetError(c, http.StatusInternalServerError, err.Error())
+		middlewares.SetError(c, apperrors.Internal{Message: err.Error()})
 		return
 	}
 
@@ -109,13 +110,13 @@ func DeleteEvent(c *gin.Context) {
 func getEventByID(c *gin.Context) (*models.Event, error) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		middlewares.SetError(c, http.StatusBadRequest, "Invalid Id")
+		middlewares.SetError(c, apperrors.Validation{Message: "Invalid Id"})
 		return nil, err
 	}
 
 	var e models.Event
 	if err = models.GetByID(&e, id); err != nil {
-		middlewares.SetError(c, http.StatusNotFound, "Could not find event with that ID")
+		middlewares.SetError(c, apperrors.NotFound{Message: "Could not find event with that ID"})
 		return nil, err
 	}
 	return &e, nil

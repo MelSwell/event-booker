@@ -3,6 +3,7 @@ package controllers
 import (
 	"net/http"
 
+	"example.com/event-booker/apperrors"
 	"example.com/event-booker/middlewares"
 	"example.com/event-booker/models"
 	"github.com/gin-gonic/gin"
@@ -17,20 +18,20 @@ func Signup(c *gin.Context) {
 	}
 
 	if err != nil {
-		middlewares.SetError(c, http.StatusBadRequest, err.Error())
+		middlewares.SetError(c, apperrors.Validation{Message: err.Error()})
 		return
 	}
 
 	id, err := models.Create(u)
 	if err != nil {
-		middlewares.SetError(c, http.StatusBadRequest, err.Error())
+		middlewares.SetError(c, apperrors.Validation{Message: err.Error()})
 		return
 	}
 	u.ID = id
 
 	jwt, err := u.GenerateJWT()
 	if err != nil {
-		middlewares.SetError(c, http.StatusInternalServerError, err.Error())
+		middlewares.SetError(c, apperrors.Validation{Message: err.Error()})
 		return
 	}
 
@@ -44,18 +45,18 @@ func Login(c *gin.Context) {
 	var u models.User
 
 	if err := c.ShouldBindJSON(&u); err != nil {
-		middlewares.SetError(c, http.StatusBadRequest, err.Error())
+		middlewares.SetError(c, apperrors.Validation{Message: err.Error()})
 		return
 	}
 
 	if err := u.ValidateLogin(); err != nil {
-		middlewares.SetError(c, http.StatusUnauthorized, err.Error())
+		middlewares.SetError(c, apperrors.Unauthorized{Message: err.Error()})
 		return
 	}
 
 	jwt, err := u.GenerateJWT()
 	if err != nil {
-		middlewares.SetError(c, http.StatusInternalServerError, err.Error())
+		middlewares.SetError(c, apperrors.Internal{Message: err.Error()})
 		return
 	}
 

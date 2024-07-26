@@ -2,10 +2,10 @@ package middlewares
 
 import (
 	"errors"
-	"net/http"
 	"os"
 	"strings"
 
+	"example.com/event-booker/apperrors"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
@@ -17,7 +17,7 @@ func Authenticate() gin.HandlerFunc {
 		parts := strings.Split(authHeader, " ")
 
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			SetError(c, http.StatusUnauthorized, "invalid authorization header format")
+			SetError(c, apperrors.Unauthorized{Message: "invalid authorization header format"})
 			return
 		}
 
@@ -25,7 +25,7 @@ func Authenticate() gin.HandlerFunc {
 
 		userId, err := verifyToken(tok)
 		if err != nil {
-			SetError(c, http.StatusUnauthorized, err.Error())
+			SetError(c, apperrors.Unauthorized{Message: err.Error()})
 			return
 		}
 
