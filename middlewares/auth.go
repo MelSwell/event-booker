@@ -11,31 +11,27 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func Authenticate(c *gin.Context) {
-	authHeader := c.Request.Header.Get("Authorization")
-	parts := strings.Split(authHeader, " ")
+func Authenticate() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.Request.Header.Get("Authorization")
+		parts := strings.Split(authHeader, " ")
 
-	if len(parts) != 2 || parts[0] != "Bearer" {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-			"status":  "fail",
-			"message": "invalid au",
-		})
-		return
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			SetError(c, http.StatusUnauthorized, "invalid authorization header format")
+			return
+		}
+
+		tok := parts[1]
+
+		userId, err := verifyToken(tok)
+		if err != nil {
+			SetError(c, http.StatusUnauthorized, err.Error())
+			return
+		}
+
+		c.Set("userId", userId)
+		c.Next()
 	}
-
-	tok := parts[1]
-
-	userId, err := verifyToken(tok)
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-			"status":  "fail",
-			"message": "not authorized",
-		})
-		return
-	}
-
-	c.Set("userId", userId)
-	c.Next()
 }
 
 func verifyToken(tokStr string) (id int64, err error) {
