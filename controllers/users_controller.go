@@ -11,14 +11,14 @@ import (
 )
 
 func GetUser(c *gin.Context) {
-	e, err := getUserByID(c)
+	u, err := getUserByID(c)
 	if err != nil {
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"status": "success",
-		"data":   e,
+		"data":   u.Public(),
 	})
 }
 

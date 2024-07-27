@@ -17,12 +17,24 @@ type User struct {
 	Password string `binding:"required,min=6,max=120" json:"password"`
 }
 
+type UserPublic struct {
+	ID    int64  `json:"id"`
+	Email string `binding:"required,email" json:"email"`
+}
+
 func (User) tableName() string {
 	return "users"
 }
 
 func (User) columnNames() []string {
 	return []string{"email", "password"}
+}
+
+func (u User) Public() UserPublic {
+	return UserPublic{
+		ID:    u.ID,
+		Email: u.Email,
+	}
 }
 
 func (u *User) HashPassword() error {

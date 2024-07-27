@@ -37,7 +37,7 @@ func Signup(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{
 		"status": "success",
-		"data":   gin.H{"user": u, "token": jwt},
+		"data":   gin.H{"user": u.Public(), "token": jwt},
 	})
 }
 
@@ -62,6 +62,6 @@ func Login(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"status": "success",
-		"data":   gin.H{"token": jwt, "user": u},
+		"data":   gin.H{"token": jwt, "user": u.Public()},
 	})
 }
