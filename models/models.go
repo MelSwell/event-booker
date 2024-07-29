@@ -15,13 +15,11 @@ type Model interface {
 }
 
 func Create(m Model) (int64, error) {
-	tableName := m.tableName()
-	columns := m.columnNames()
 	vals := fieldVals(m)
 
 	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
-		tableName,
-		strings.Join(columns, ", "),
+		m.tableName(),
+		strings.Join(m.columnNames(), ", "),
 		placeholders(len(vals)))
 
 	stmt, err := db.DB.Prepare(query)
@@ -39,10 +37,7 @@ func Create(m Model) (int64, error) {
 }
 
 func Update(m Model, id int64) error {
-	tableName := m.tableName()
 	columns := m.columnNames()
-	vals := fieldVals(m)
-	vals = append(vals, id)
 
 	setClause := make([]string, (len(columns)))
 	for i, c := range columns {
@@ -50,7 +45,7 @@ func Update(m Model, id int64) error {
 	}
 
 	query := fmt.Sprintf("UPDATE %s SET %s WHERE id = ?",
-		tableName,
+		m.tableName(),
 		strings.Join(setClause, ", "))
 
 	stmt, err := db.DB.Prepare(query)
@@ -59,6 +54,8 @@ func Update(m Model, id int64) error {
 	}
 	defer stmt.Close()
 
+	vals := fieldVals(m)
+	vals = append(vals, id)
 	if _, err := stmt.Exec(vals...); err != nil {
 		return err
 	}
