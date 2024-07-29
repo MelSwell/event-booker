@@ -12,6 +12,7 @@ type Event struct {
 	Description string    `binding:"required" json:"description"`
 	Location    string    `binding:"required" json:"location"`
 	DateTime    time.Time `binding:"required" json:"dateTime"`
+	CreatedAt   time.Time `json:"createdAt"`
 	UserID      int64     `json:"userId"`
 }
 
@@ -19,8 +20,8 @@ func (Event) tableName() string {
 	return "events"
 }
 
-func (Event) columnNames() []string {
-	return []string{"name", "description", "location", "dateTime", "userId"}
+func (e Event) columnNames() []string {
+	return getColumnNames(e)
 }
 
 func GetEvents() ([]Event, error) {
@@ -41,6 +42,7 @@ func GetEvents() ([]Event, error) {
 			&e.Description,
 			&e.Location,
 			&e.DateTime,
+			&e.CreatedAt,
 			&e.UserID,
 		)
 

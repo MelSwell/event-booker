@@ -17,17 +17,20 @@ type User struct {
 	Password      string    `binding:"required,min=6,max=120" json:"password"`
 	LockUntil     time.Time `json:"lockUntil"`
 	LoginAttempts int       `json:"loginAttempts"`
+	CreatedAt     time.Time `json:"createdAt"`
 }
 
 type UserPublic struct {
-	ID    int64  `json:"id"`
-	Email string `binding:"required,email" json:"email"`
+	ID        int64     `json:"id"`
+	Email     string    `binding:"required,email" json:"email"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 func (u User) Public() UserPublic {
 	return UserPublic{
-		ID:    u.ID,
-		Email: u.Email,
+		ID:        u.ID,
+		Email:     u.Email,
+		CreatedAt: u.CreatedAt,
 	}
 }
 
@@ -35,8 +38,8 @@ func (User) tableName() string {
 	return "users"
 }
 
-func (User) columnNames() []string {
-	return []string{"email", "password", "lockUntil", "loginAttempts"}
+func (u User) columnNames() []string {
+	return getColumnNames(u)
 }
 
 func (u *User) HashPassword() error {
@@ -73,13 +76,13 @@ func (u User) MonitorLoginAttempts() error {
 
 func (u *User) ValidateLogin() error {
 	query := `
-	SELECT id, password, lockUntil, loginAttempts 
+	SELECT id, password, lockUntil, loginAttempts, createdAt 
 	FROM users WHERE email = ?
 	`
 	r := db.DB.QueryRow(query, u.Email)
 
 	var hash string
-	err := r.Scan(&u.ID, &hash, &u.LockUntil, &u.LoginAttempts)
+	err := r.Scan(&u.ID, &hash, &u.LockUntil, &u.LoginAttempts, &u.CreatedAt)
 
 	if u.LockUntil.After(time.Now()) {
 		return apperrors.Unauthorized{Message: "this account is locked, please try again later"}
@@ -95,6 +98,7 @@ func (u *User) ValidateLogin() error {
 
 	u.LockUntil = time.Time{}
 	u.LoginAttempts = 0
+	// Put the hash from the database into the user struct before calling Update
 	u.Password = hash
 	if err = Update(*u, u.ID); err != nil {
 		return apperrors.Internal{Message: "something went wrong"}

@@ -27,7 +27,12 @@ func Signup(c *gin.Context) {
 		middlewares.SetError(c, apperrors.Validation{Message: err.Error()})
 		return
 	}
-	u.ID = id
+
+	// fetch created user back from DB in order to reflect default values in resp
+	if err = models.GetByID(&u, id); err != nil {
+		middlewares.SetError(c, apperrors.Internal{Message: "something went wrong"})
+		return
+	}
 
 	jwt, err := u.GenerateJWT()
 	if err != nil {

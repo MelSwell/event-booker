@@ -15,7 +15,7 @@ type Model interface {
 }
 
 func Create(m Model) (int64, error) {
-	vals := fieldVals(m)
+	vals := getValsFromModel(m)
 
 	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
 		m.tableName(),
@@ -54,7 +54,7 @@ func Update(m Model, id int64) error {
 	}
 	defer stmt.Close()
 
-	vals := fieldVals(m)
+	vals := getValsFromModel(m)
 	vals = append(vals, id)
 	if _, err := stmt.Exec(vals...); err != nil {
 		return err
@@ -84,9 +84,8 @@ func GetByID(m Model, id int64) error {
 	return nil
 }
 
-/////////////////// HELPERS /////////////////////////
-
-func fieldVals(m Model) []interface{} {
+// ///////////////// HELPERS /////////////////////////
+func getValsFromModel(m Model) []interface{} {
 	val := reflect.ValueOf(m)
 	typ := reflect.TypeOf(m)
 	numFields := val.NumField()
@@ -94,7 +93,8 @@ func fieldVals(m Model) []interface{} {
 	fieldMap := make(map[string]interface{})
 	for i := 0; i < numFields; i++ {
 		field := typ.Field(i)
-		if field.Name == "ID" {
+		// skip default fields managed by the DB
+		if field.Name == "ID" || field.Name == "CreatedAt" {
 			continue
 		}
 		jsonTag := field.Tag.Get("json")
@@ -102,12 +102,12 @@ func fieldVals(m Model) []interface{} {
 	}
 
 	columnNames := m.columnNames()
-	values := make([]interface{}, len(columnNames))
+	vals := make([]interface{}, len(columnNames))
 	for i, cn := range columnNames {
-		values[i] = fieldMap[cn]
+		vals[i] = fieldMap[cn]
 	}
 
-	return values
+	return vals
 }
 
 func scanRowToModel(m Model, r *sql.Row) error {
@@ -123,6 +123,22 @@ func scanRowToModel(m Model, r *sql.Row) error {
 		return err
 	}
 	return nil
+}
+
+func getColumnNames(m Model) []string {
+	typ := reflect.TypeOf(m)
+	var columnNames []string
+
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
+		tag := field.Tag.Get("json")
+		// skip default fields managed by the DB
+		if tag == "id" || tag == "createdAt" {
+			continue
+		}
+		columnNames = append(columnNames, tag)
+	}
+	return columnNames
 }
 
 func placeholders(n int) string {

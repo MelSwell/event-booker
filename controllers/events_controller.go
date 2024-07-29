@@ -38,7 +38,11 @@ func CreateEvent(c *gin.Context) {
 		middlewares.SetError(c, apperrors.Validation{Message: err.Error()})
 		return
 	}
-	e.ID = id
+
+	// fetch created event back from DB in order to reflect default values in resp
+	if err = models.GetByID(&e, id); err != nil {
+		middlewares.SetError(c, apperrors.Internal{Message: "something went wrong"})
+	}
 
 	c.JSON(http.StatusCreated, gin.H{
 		"status": "success",

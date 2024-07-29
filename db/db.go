@@ -29,7 +29,8 @@ func createTables() {
 		email TEXT NOT NULL UNIQUE,
 		password TEXT NOT NULL,
 		lockUntil DATETIME,
-		loginAttempts INTEGER
+		loginAttempts INTEGER,
+		createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 	);
 	`
 	_, err := DB.Exec(createUsersTable)
@@ -45,12 +46,32 @@ func createTables() {
 		description TEXT NOT NULL,
 		location TEXT NOT NULL,
 		dateTime DATETIME NOT NULL,
+		createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		userId INTEGER,
-		FOREIGN KEY(userID) REFERENCES users(id)
+		FOREIGN KEY(userId) REFERENCES users(id)
 	);
 	`
 
 	_, err = DB.Exec(createEventsTable)
+
+	if err != nil {
+		panic(err)
+	}
+
+	createRefreshTokensTable := `
+	CREATE TABLE IF NOT EXISTS refreshTokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    token TEXT NOT NULL,
+    expiresAt DATETIME NOT NULL,
+    createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    revoked BOOLEAN DEFAULT FALSE,
+    revokedAt DATETIME,
+    userId INTEGER,
+    FOREIGN KEY(userId) REFERENCES users(id)
+);
+	`
+
+	_, err = DB.Exec(createRefreshTokensTable)
 
 	if err != nil {
 		panic(err)
