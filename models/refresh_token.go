@@ -1,10 +1,13 @@
 package models
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"os"
 	"strconv"
 	"time"
 
+	"example.com/event-booker/db"
 	"github.com/theckman/go-securerandom"
 )
 
@@ -27,23 +30,57 @@ func (rt RefreshToken) columnNames() []string {
 }
 
 func GenerateRefreshToken(u User) (string, error) {
+	var rt RefreshToken
+
 	tok, err := securerandom.URLBase64InBytes(48)
 	if err != nil {
 		return "", err
 	}
+	rt.Token = hashToken(tok)
 
-	var rt RefreshToken
-	rt.UserID = u.ID
-	tokenExp, err := strconv.Atoi(os.Getenv("REFRESH_TOKEN_EXPIRY"))
+	exp, err := strconv.Atoi(os.Getenv("REFRESH_TOKEN_EXPIRY"))
 	if err != nil {
 		return "", err
 	}
-	rt.ExpiresAt = time.Now().Add(time.Duration(tokenExp) * time.Second)
-	rt.Token = tok
+	rt.ExpiresAt = time.Now().Add(time.Duration(exp) * time.Second)
+	rt.UserID = u.ID
+
+	if err := revokeOldTokens(u.ID); err != nil {
+		return "", err
+	}
 
 	if _, err = Create(rt); err != nil {
 		return "", err
 	}
 
 	return tok, nil
+}
+
+func ValidateAndGetRefreshToken(tok string) (*RefreshToken, error) {
+	hash := hashToken(tok)
+	query := `
+	SELECT * FROM refreshTokens 
+	WHERE token = ? AND revoked = ? AND expiresAt > ?
+	`
+	r := db.DB.QueryRow(query, hash, false, time.Now())
+	var rt RefreshToken
+	if err := r.Scan(&rt); err != nil {
+		return nil, err
+	}
+	return &rt, nil
+}
+
+func hashToken(tok string) string {
+	hash := sha256.New()
+	hash.Write([]byte(tok))
+	return hex.EncodeToString([]byte(hash.Sum(nil)))
+}
+
+func revokeOldTokens(uid int64) error {
+	query := `
+	UPDATE refreshTokens SET revoked = ?, revokedAt = ? 
+	WHERE userId = ? AND expiresAt < ?
+`
+	_, err := db.DB.Exec(query, true, time.Now(), uid, time.Now())
+	return err
 }
