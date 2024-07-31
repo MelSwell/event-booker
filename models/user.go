@@ -1,13 +1,10 @@
 package models
 
 import (
-	"os"
-	"strconv"
 	"time"
 
 	"example.com/event-booker/apperrors"
 	"example.com/event-booker/db"
-	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -49,37 +46,6 @@ func (u *User) HashPassword() error {
 	}
 	u.Password = string(b)
 	return nil
-}
-
-func (u User) GenerateJWT() (string, error) {
-	tokenExp, err := strconv.Atoi(os.Getenv("JWT_EXPIRY"))
-	if err != nil {
-		return "", err
-	}
-	tok := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"email": u.Email,
-		"id":    u.ID,
-		"exp":   time.Now().Add(time.Duration(tokenExp) * time.Second).Unix(),
-	})
-
-	return tok.SignedString([]byte(os.Getenv("JWT_SECRET")))
-}
-
-func (u User) GenerateTokens() (map[string]string, error) {
-	tokens := make(map[string]string)
-	accessToken, err := u.GenerateJWT()
-	if err != nil {
-		return nil, err
-	}
-	tokens["accessToken"] = accessToken
-
-	refreshToken, err := GenerateRefreshToken(u)
-	if err != nil {
-		return nil, err
-	}
-	tokens["refreshToken"] = refreshToken
-
-	return tokens, nil
 }
 
 func (u User) MonitorLoginAttempts() error {

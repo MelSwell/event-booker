@@ -27,4 +27,5 @@ func registerAuthRoutes(rg *gin.RouterGroup) {
 	r := rg.Group("/auth")
 	r.POST("/signup", controllers.Signup)
 	r.POST("/login", controllers.Login)
+	r.POST("/refresh", controllers.RefreshJWT)
 }

@@ -78,7 +78,7 @@ func GetByID(m Model, id int64) error {
 	query := fmt.Sprintf("SELECT * FROM %s WHERE id = ?", m.tableName())
 	r := db.DB.QueryRow(query, id)
 
-	if err := scanRowToModel(m, r); err != nil {
+	if err := ScanRowToModel(m, r); err != nil {
 		return err
 	}
 	return nil
@@ -110,7 +110,7 @@ func getValsFromModel(m Model) []interface{} {
 	return vals
 }
 
-func scanRowToModel(m Model, r *sql.Row) error {
+func ScanRowToModel(m Model, r *sql.Row) error {
 	val := reflect.ValueOf(m).Elem()
 	typ := val.Type()
 
