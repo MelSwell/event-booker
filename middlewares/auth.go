@@ -8,7 +8,6 @@ import (
 	"example.com/event-booker/apperrors"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/joho/godotenv"
 )
 
 func Authenticate() gin.HandlerFunc {
@@ -40,12 +39,17 @@ func verifyToken(tokStr string) (id int64, err error) {
 			return nil, errors.New("invalid token signing method")
 		}
 
-		godotenv.Load(".env")
 		return []byte(os.Getenv("JWT_SECRET")), nil
 	})
 
 	if err != nil {
-		return 0, errors.New("could not parse token")
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return 0, errors.New("token expired")
+		} else if errors.Is(err, jwt.ErrTokenMalformed) {
+			return 0, errors.New("malformed token")
+		} else {
+			return 0, err
+		}
 	}
 
 	if !tok.Valid {

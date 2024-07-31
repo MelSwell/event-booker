@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"net/http"
+	"os"
+	"strconv"
 
 	"example.com/event-booker/apperrors"
 	"example.com/event-booker/middlewares"
@@ -12,11 +14,9 @@ import (
 func Signup(c *gin.Context) {
 	var u models.User
 	err := c.ShouldBindJSON(&u)
-
 	if err == nil {
 		err = u.HashPassword()
 	}
-
 	if err != nil {
 		middlewares.SetError(c, apperrors.Validation{Message: err.Error()})
 		return
@@ -34,21 +34,26 @@ func Signup(c *gin.Context) {
 		return
 	}
 
-	jwt, err := u.GenerateJWT()
+	tokens, err := u.GenerateTokens()
 	if err != nil {
-		middlewares.SetError(c, apperrors.Validation{Message: err.Error()})
-		return
+		middlewares.SetError(c, apperrors.Internal{Message: err.Error()})
 	}
 
+	if err = setAuthCookies(c, tokens); err != nil {
+		middlewares.SetError(c, apperrors.Internal{Message: err.Error()})
+	}
 	c.JSON(http.StatusCreated, gin.H{
 		"status": "success",
-		"data":   gin.H{"user": u.Public(), "token": jwt},
+		"data": gin.H{
+			"user":         u.Public(),
+			"accessToken":  tokens["accessToken"],
+			"refreshToken": tokens["refreshToken"],
+		},
 	})
 }
 
 func Login(c *gin.Context) {
 	var u models.User
-
 	if err := c.ShouldBindJSON(&u); err != nil {
 		middlewares.SetError(c, apperrors.Validation{Message: err.Error()})
 		return
@@ -59,14 +64,52 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	jwt, err := u.GenerateJWT()
+	tokens, err := u.GenerateTokens()
 	if err != nil {
 		middlewares.SetError(c, apperrors.Internal{Message: err.Error()})
 		return
 	}
 
+	if err = setAuthCookies(c, tokens); err != nil {
+		middlewares.SetError(c, apperrors.Internal{Message: err.Error()})
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"status": "success",
-		"data":   gin.H{"token": jwt, "user": u.Public()},
+		"data": gin.H{
+			"user":         u.Public(),
+			"accessToken":  tokens["accessToken"],
+			"refreshToken": tokens["refreshToken"],
+		},
 	})
+}
+
+func setAuthCookies(c *gin.Context, tokens map[string]string) error {
+	jwtExp, err := strconv.Atoi(os.Getenv("JWT_EXPIRY"))
+	if err != nil {
+		return apperrors.Internal{Message: "something went wrong"}
+	}
+	c.SetCookie(
+		"access_token",
+		tokens["accessToken"],
+		jwtExp,
+		"/",
+		"",
+		os.Getenv("ENVIRONMENT") == "prod",
+		true,
+	)
+
+	refreshExp, err := strconv.Atoi(os.Getenv("REFRESH_TOKEN_EXPIRY"))
+	if err != nil {
+		return apperrors.Internal{Message: "something went wrong"}
+	}
+	c.SetCookie(
+		"refresh_token",
+		tokens["refreshToken"],
+		refreshExp,
+		"/",
+		"",
+		os.Getenv("ENVIRONMENT") == "prod",
+		true,
+	)
+	return nil
 }
