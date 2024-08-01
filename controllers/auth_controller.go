@@ -91,7 +91,7 @@ func RefreshJWT(c *gin.Context) {
 		return
 	}
 
-	rt, err := auth.ValidateAndGetRefreshToken(tok)
+	rt, err := auth.GetRefreshTokenAndVerify(tok)
 	if err != nil {
 		middlewares.SetError(c, apperrors.Unauthorized{Message: err.Error()})
 		return

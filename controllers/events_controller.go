@@ -51,7 +51,7 @@ func CreateEvent(c *gin.Context) {
 }
 
 func GetEvent(c *gin.Context) {
-	e, err := getEventByID(c)
+	e, err := getEventByParam(c)
 	if err != nil {
 		return
 	}
@@ -63,7 +63,7 @@ func GetEvent(c *gin.Context) {
 }
 
 func UpdateEvent(c *gin.Context) {
-	e, err := getEventByID(c)
+	e, err := getEventByParam(c)
 	if err != nil {
 		return
 	}
@@ -90,7 +90,7 @@ func UpdateEvent(c *gin.Context) {
 }
 
 func DeleteEvent(c *gin.Context) {
-	e, err := getEventByID(c)
+	e, err := getEventByParam(c)
 	if err != nil {
 		return
 	}
@@ -111,7 +111,7 @@ func DeleteEvent(c *gin.Context) {
 	})
 }
 
-func getEventByID(c *gin.Context) (*models.Event, error) {
+func getEventByParam(c *gin.Context) (*models.Event, error) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		middlewares.SetError(c, apperrors.Validation{Message: "Invalid Id"})

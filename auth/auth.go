@@ -3,6 +3,7 @@ package auth
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -75,7 +76,39 @@ func GenerateRefreshToken(userID int64) (string, error) {
 	return tok, nil
 }
 
-func ValidateAndGetRefreshToken(tok string) (*models.RefreshToken, error) {
+func VerifyJWT(tokStr string) (id int64, err error) {
+	tok, err := jwt.Parse(tokStr, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("invalid token signing method")
+		}
+
+		return []byte(os.Getenv("JWT_SECRET")), nil
+	})
+
+	if err != nil {
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return 0, errors.New("token expired")
+		} else if errors.Is(err, jwt.ErrTokenMalformed) {
+			return 0, errors.New("malformed token")
+		} else {
+			return 0, err
+		}
+	}
+
+	if !tok.Valid {
+		return 0, errors.New("invalid token")
+	}
+
+	claims, ok := tok.Claims.(jwt.MapClaims)
+	if !ok {
+		return 0, errors.New("invalid token")
+	}
+	userId := claims["id"].(float64)
+
+	return int64(userId), nil
+}
+
+func GetRefreshTokenAndVerify(tok string) (*models.RefreshToken, error) {
 	hash := hashToken(tok)
 	query := `
 	SELECT * FROM refreshTokens
