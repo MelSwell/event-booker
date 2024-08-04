@@ -37,13 +37,19 @@ func GenerateJWT(u models.User) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	tok := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"email": u.Email,
 		"id":    u.ID,
 		"exp":   time.Now().Add(time.Duration(exp) * time.Second).Unix(),
 	})
 
-	return tok.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	tokStr, err := tok.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		return "", err
+	}
+
+	return tokStr, nil
 }
 
 func GenerateRefreshToken(userID int64) (string, error) {
@@ -85,14 +91,8 @@ func VerifyJWT(tokStr string) (id int64, err error) {
 		return []byte(os.Getenv("JWT_SECRET")), nil
 	})
 
-	if err != nil {
-		if errors.Is(err, jwt.ErrTokenExpired) {
-			return 0, errors.New("token expired")
-		} else if errors.Is(err, jwt.ErrTokenMalformed) {
-			return 0, errors.New("malformed token")
-		} else {
-			return 0, err
-		}
+	if err != nil && errors.Is(err, jwt.ErrTokenExpired) {
+		return 0, errors.New("token expired")
 	}
 
 	if !tok.Valid {
@@ -100,10 +100,14 @@ func VerifyJWT(tokStr string) (id int64, err error) {
 	}
 
 	claims, ok := tok.Claims.(jwt.MapClaims)
-	if !ok {
-		return 0, errors.New("invalid token")
+	if !ok || claims["id"] == nil {
+		return 0, errors.New("invalid claims")
 	}
-	userId := claims["id"].(float64)
+
+	userId, ok := claims["id"].(float64)
+	if !ok {
+		return 0, errors.New("invalid claims")
+	}
 
 	return int64(userId), nil
 }
