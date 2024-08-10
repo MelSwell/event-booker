@@ -6,6 +6,7 @@ import (
 
 	"example.com/event-booker/db"
 	"example.com/event-booker/middlewares"
+	"example.com/event-booker/repository"
 	"example.com/event-booker/routes"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -14,17 +15,22 @@ import (
 func main() {
 	loadEnv()
 	db.InitDB()
-	r := setupEngine()
+
+	var repo = &repository.Repo{
+		Interface: &repository.SqlRepo{DB: db.DB},
+	}
+
+	r := setupEngine(repo)
 	r.Run(":8080")
 }
 
-func setupEngine() *gin.Engine {
+func setupEngine(repo *repository.Repo) *gin.Engine {
 	r := gin.Default()
 
 	r.Use(middlewares.Recovery())
 	r.Use(middlewares.ErrorHandler())
 
-	routes.RegisterRoutes(r)
+	routes.RegisterRoutes(r, repo)
 	r.Use(middlewares.NotFoundHandler())
 
 	return r

@@ -1,9 +1,7 @@
-package models
+package repository
 
 import (
 	"time"
-
-	"example.com/event-booker/db"
 )
 
 type Event struct {
@@ -16,17 +14,17 @@ type Event struct {
 	UserID      int64     `json:"userId"`
 }
 
-func (Event) tableName() string {
+func (Event) TableName() string {
 	return "events"
 }
 
-func (e Event) columnNames() []string {
+func (e Event) ColumnNames() []string {
 	return getColumnNames(e)
 }
 
-func GetEvents() ([]Event, error) {
+func (sr *SqlRepo) GetEvents() ([]Event, error) {
 	query := "SELECT * FROM events"
-	r, err := db.DB.Query(query)
+	r, err := sr.DB.Query(query)
 	if err != nil {
 		return nil, err
 	}

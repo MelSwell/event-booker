@@ -8,12 +8,12 @@ import (
 	"example.com/event-booker/apperrors"
 	"example.com/event-booker/auth"
 	"example.com/event-booker/middlewares"
-	"example.com/event-booker/models"
+	"example.com/event-booker/repository"
 	"github.com/gin-gonic/gin"
 )
 
-func Signup(c *gin.Context) {
-	var u models.User
+func Signup(c *gin.Context, r *repository.Repo) {
+	var u repository.User
 	err := c.ShouldBindJSON(&u)
 	if err == nil {
 		err = u.HashPassword()
@@ -23,19 +23,19 @@ func Signup(c *gin.Context) {
 		return
 	}
 
-	id, err := models.Create(u)
+	id, err := r.Interface.Create(u)
 	if err != nil {
 		middlewares.SetError(c, apperrors.Validation{Message: err.Error()})
 		return
 	}
 
 	// fetch created user back from DB in order to reflect default values in resp
-	if err = models.GetByID(&u, id); err != nil {
+	if err = r.Interface.GetByID(&u, id); err != nil {
 		middlewares.SetError(c, apperrors.Internal{Message: "something went wrong"})
 		return
 	}
 
-	tokens, err := auth.GenerateTokens(u)
+	tokens, err := auth.GenerateTokens(u, r)
 	if err != nil {
 		middlewares.SetError(c, apperrors.Internal{Message: err.Error()})
 	}
@@ -53,19 +53,19 @@ func Signup(c *gin.Context) {
 	})
 }
 
-func Login(c *gin.Context) {
-	var u models.User
+func Login(c *gin.Context, r *repository.Repo) {
+	var u repository.User
 	if err := c.ShouldBindJSON(&u); err != nil {
 		middlewares.SetError(c, apperrors.Validation{Message: err.Error()})
 		return
 	}
 
-	if err := u.ValidateLogin(); err != nil {
-		middlewares.SetError(c, apperrors.Unauthorized{Message: err.Error()})
+	if err := u.ValidateLogin(r); err != nil {
+		middlewares.SetError(c, err)
 		return
 	}
 
-	tokens, err := auth.GenerateTokens(u)
+	tokens, err := auth.GenerateTokens(u, r)
 	if err != nil {
 		middlewares.SetError(c, apperrors.Internal{Message: err.Error()})
 		return
@@ -84,21 +84,21 @@ func Login(c *gin.Context) {
 	})
 }
 
-func RefreshJWT(c *gin.Context) {
+func RefreshJWT(c *gin.Context, r *repository.Repo) {
 	tok, err := c.Cookie("refresh_token")
 	if err != nil {
 		middlewares.SetError(c, apperrors.Unauthorized{Message: "unauthorized"})
 		return
 	}
 
-	rt, err := auth.GetRefreshTokenAndVerify(tok)
+	rt, err := auth.GetRefreshTokenAndVerify(tok, r)
 	if err != nil {
 		middlewares.SetError(c, apperrors.Unauthorized{Message: err.Error()})
 		return
 	}
 
-	var u models.User
-	if err = models.GetByID(&u, rt.UserID); err != nil {
+	var u repository.User
+	if err = r.Interface.GetByID(&u, rt.UserID); err != nil {
 		middlewares.SetError(c, apperrors.Internal{Message: "something went wrong"})
 		return
 	}

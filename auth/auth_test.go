@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"example.com/event-booker/models"
+	"example.com/event-booker/repository"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 )
@@ -33,6 +33,7 @@ func Test_VerifyJWT(t *testing.T) {
 	// set up invalid token
 	invalidToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"exp": time.Now().Add(time.Hour * 1).Unix(),
+		"id":  1,
 	})
 	invalidTokenString, err := invalidToken.SignedString([]byte("INVALIDSECRETKEY"))
 	assert.NoError(t, err)
@@ -120,8 +121,8 @@ func Test_VerifyJWT(t *testing.T) {
 }
 
 func Test_GenerateJWT(t *testing.T) {
-	u := models.User{
-		ID:    1,
+	u := repository.User{
+		ID:    77,
 		Email: "test@hello.com",
 	}
 

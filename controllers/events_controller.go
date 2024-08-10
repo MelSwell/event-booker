@@ -6,12 +6,12 @@ import (
 
 	"example.com/event-booker/apperrors"
 	"example.com/event-booker/middlewares"
-	"example.com/event-booker/models"
+	"example.com/event-booker/repository"
 	"github.com/gin-gonic/gin"
 )
 
-func GetEvents(c *gin.Context) {
-	e, err := models.GetEvents()
+func GetEvents(c *gin.Context, r *repository.Repo) {
+	e, err := r.Interface.GetEvents()
 
 	if err != nil {
 		middlewares.SetError(c, apperrors.Validation{Message: err.Error()})
@@ -24,8 +24,8 @@ func GetEvents(c *gin.Context) {
 	})
 }
 
-func CreateEvent(c *gin.Context) {
-	var e models.Event
+func CreateEvent(c *gin.Context, r *repository.Repo) {
+	var e repository.Event
 
 	if err := c.ShouldBindJSON(&e); err != nil {
 		middlewares.SetError(c, apperrors.Validation{Message: err.Error()})
@@ -33,14 +33,14 @@ func CreateEvent(c *gin.Context) {
 	}
 
 	e.UserID = c.GetInt64("userId")
-	id, err := models.Create(e)
+	id, err := r.Interface.Create(e)
 	if err != nil {
 		middlewares.SetError(c, apperrors.Validation{Message: err.Error()})
 		return
 	}
 
 	// fetch created event back from DB in order to reflect default values in resp
-	if err = models.GetByID(&e, id); err != nil {
+	if err = r.Interface.GetByID(&e, id); err != nil {
 		middlewares.SetError(c, apperrors.Internal{Message: "something went wrong"})
 	}
 
@@ -50,8 +50,8 @@ func CreateEvent(c *gin.Context) {
 	})
 }
 
-func GetEvent(c *gin.Context) {
-	e, err := getEventByParam(c)
+func GetEvent(c *gin.Context, r *repository.Repo) {
+	e, err := getEventByParam(c, r)
 	if err != nil {
 		return
 	}
@@ -62,8 +62,8 @@ func GetEvent(c *gin.Context) {
 	})
 }
 
-func UpdateEvent(c *gin.Context) {
-	e, err := getEventByParam(c)
+func UpdateEvent(c *gin.Context, r *repository.Repo) {
+	e, err := getEventByParam(c, r)
 	if err != nil {
 		return
 	}
@@ -78,7 +78,7 @@ func UpdateEvent(c *gin.Context) {
 		return
 	}
 
-	if err = models.Update(*e, e.ID); err != nil {
+	if err = r.Interface.Update(*e, e.ID); err != nil {
 		middlewares.SetError(c, apperrors.Internal{Message: err.Error()})
 		return
 	}
@@ -89,8 +89,8 @@ func UpdateEvent(c *gin.Context) {
 	})
 }
 
-func DeleteEvent(c *gin.Context) {
-	e, err := getEventByParam(c)
+func DeleteEvent(c *gin.Context, r *repository.Repo) {
+	e, err := getEventByParam(c, r)
 	if err != nil {
 		return
 	}
@@ -100,7 +100,7 @@ func DeleteEvent(c *gin.Context) {
 		return
 	}
 
-	if err = models.Delete(e, e.ID); err != nil {
+	if err = r.Interface.Delete(e, e.ID); err != nil {
 		middlewares.SetError(c, apperrors.Internal{Message: err.Error()})
 		return
 	}
@@ -111,15 +111,15 @@ func DeleteEvent(c *gin.Context) {
 	})
 }
 
-func getEventByParam(c *gin.Context) (*models.Event, error) {
+func getEventByParam(c *gin.Context, r *repository.Repo) (*repository.Event, error) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		middlewares.SetError(c, apperrors.Validation{Message: "Invalid Id"})
 		return nil, err
 	}
 
-	var e models.Event
-	if err = models.GetByID(&e, id); err != nil {
+	var e repository.Event
+	if err = r.Interface.GetByID(&e, id); err != nil {
 		middlewares.SetError(c, apperrors.NotFound{Message: "Could not find event with that ID"})
 		return nil, err
 	}
